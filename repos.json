@@ -2,7 +2,7 @@
   "repos": [
     {
       "name": "9am-vehicleshop",
-      "githubUrl": "https://github.com/ilovehugetits/9am-vehicleshop.git",
+      "githubUrl": "git@github.com:ilovehugetits/9am-vehicleshop.git",
       "branch": "main"
     }
   ]
