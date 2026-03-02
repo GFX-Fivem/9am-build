@@ -1,8 +1,29 @@
+# Dependencies
 node_modules/
-repos/
-auth-state.json
-.env
+
+# Build output
 dist/
-*.zip
 .build/
+*.zip
+
+# Cloned repos
+repos/
+
+# Environment & secrets
+.env
+auth-state.json
 passkey-credential.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Bun
+*.lockb
