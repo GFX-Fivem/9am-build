@@ -96,8 +96,12 @@ async function loginWithPasskey(browser: Browser): Promise<boolean> {
   }
 }
 
+// First-time setup needs a visible browser so the operator can log into the
+// Cfx.re forum and click "Add passkey". Set HEADLESS=false in .env (or the
+// shell) on first run; flip back to default headless once auth-state.json
+// and passkey-credential.json exist.
 const launchOptions = {
-  headless: true,
+  headless: process.env.HEADLESS === "false" ? false : true,
   protocolTimeout: 120_000,
   args: [
     "--no-sandbox",
