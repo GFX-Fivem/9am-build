@@ -2,11 +2,10 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { readFile } from "fs/promises";
 import path from "path";
 import chalk from "chalk";
-import { cloneOrPull, getGitDiff } from "./git.js";
+import { cloneOrPull } from "./git.js";
 import { deployScript } from "./deploy.js";
 import { buildQueue } from "./queue.js";
-import { generateChangelog } from "./changelog.js";
-import { sendDiscordChangelog } from "./discord.js";
+import { sendDiscordDeployPing } from "./discord.js";
 
 export interface RepoEntry {
   name: string;
@@ -131,32 +130,18 @@ async function handleWebhook(req: Request, repos: RepoEntry[], webhookSecret: st
     await deployScript(repoDir);
     console.log(chalk.bold.green(`[Pipeline] ${repo.name}: Completed.`));
 
-    // Discord changelog (non-fatal)
+    // Discord deploy ping (non-fatal). No AI changelog — the autonomous loop
+    // listens for this ping and writes its own changelog + customer notice.
     try {
-      console.log(chalk.gray(`[Changelog] ${repo.name}: Generating...`));
-
-      const isInitialPush = payload.before === "0000000000000000000000000000000000000000";
-      const diff = isInitialPush ? "" : getGitDiff(repoDir, payload.before, payload.after);
-
-      const changelog = await generateChangelog({
+      await sendDiscordDeployPing({
         repoName: repo.name,
-        commits: payload.commits.map((c) => ({
-          message: c.message,
-          added: c.added,
-          removed: c.removed,
-          modified: c.modified,
-        })),
-        diff,
-      });
-
-      console.log(chalk.gray(`[Changelog] ${repo.name}:\n${changelog}`));
-
-      await sendDiscordChangelog({
-        repoName: repo.name,
-        changelog,
+        commitSha: payload.after,
+        commitMessage: payload.head_commit?.message ?? "(no commit message)",
+        branch: targetBranch,
+        compareUrl: payload.compare,
       });
     } catch (err: any) {
-      console.error(chalk.yellow(`[Changelog] ${repo.name}: Failed (non-fatal): ${err.message}`));
+      console.error(chalk.yellow(`[Discord] ${repo.name}: Ping failed (non-fatal): ${err.message}`));
     }
 
     console.log();
