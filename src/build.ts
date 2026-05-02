@@ -12,8 +12,13 @@ interface BuildResult {
   openZip?: string;
 }
 
+// `.build/**` is our own scratch dir — always excluded.
+// node_modules is NOT excluded by default: some FiveM scripts (e.g.
+// gfx-deathcam) commit their node_modules because they require Node packages
+// at runtime (`require('discord-id')` etc.) and Cfx.re Keymaster can't run
+// `npm install` post-deploy. Scripts that don't need node_modules can opt
+// to exclude it via upload-config.json's `exclude` field.
 const ALWAYS_EXCLUDE = [
-  "**/node_modules/**",
   "**/.build/**",
 ];
 
