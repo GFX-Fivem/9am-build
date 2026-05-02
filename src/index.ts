@@ -3,6 +3,7 @@ import { cloneOrPull, getRepoDir, getGitDiff } from "./git.js";
 import { deployScript } from "./deploy.js";
 import { startServer, loadReposConfig } from "./server.js";
 import { registerPasskey } from "./register-passkey.js";
+import { loginAndSaveCookies } from "./login.js";
 import { generateChangelog } from "./changelog.js";
 import { sendDiscordChangelog } from "./discord.js";
 
@@ -14,7 +15,8 @@ async function main() {
     console.error(chalk.red("  bun run deploy <script-name>    Build + upload"));
     console.error(chalk.red("  bun run build <script-name>     Build only (no upload)"));
     console.error(chalk.red("  bun run server                  Start webhook server"));
-    console.error(chalk.red("  bun run register-passkey        Register forum passkey"));
+    console.error(chalk.red("  bun run login                   Save Cfx.re forum cookies (no passkey)"));
+    console.error(chalk.red("  bun run register-passkey        Register forum passkey (optional)"));
     console.error(chalk.red("  bun src/index.ts debug <repo> <commit-id>  Changelog test"));
     process.exit(1);
   }
@@ -25,7 +27,13 @@ async function main() {
     return;
   }
 
-  // Passkey registration mode
+  // Cookies-only login (no passkey)
+  if (command === "login") {
+    await loginAndSaveCookies();
+    return;
+  }
+
+  // Passkey registration mode (optional)
   if (command === "register-passkey") {
     await registerPasskey();
     return;
