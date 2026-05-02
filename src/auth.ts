@@ -112,6 +112,32 @@ const launchOptions = {
   defaultViewport: { width: 1280, height: 800 },
 };
 
+// If we landed on the portal login page, walk the "Sign in with Cfx.re" SSO
+// flow using whatever forum-cookie session is already attached. Returns true
+// if we end up authenticated on the portal.
+async function completePortalSso(page: import("puppeteer").Page): Promise<boolean> {
+  if (!page.url().includes("/login")) return true;
+  const clicked = await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll("button, a"));
+    for (const b of buttons) {
+      const cls = b.getAttribute("class") || "";
+      const txt = (b as HTMLElement).innerText?.toLowerCase() || "";
+      if (cls.toLowerCase().includes("login_nowrap") || txt.includes("sign in with cfx.re") || txt.includes("cfx.re")) {
+        (b as HTMLElement).click();
+        return true;
+      }
+    }
+    return false;
+  });
+  if (!clicked) return false;
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 500));
+    if (page.url().includes("portal.cfx.re") && !page.url().includes("/login")) return true;
+  }
+  return false;
+}
+
 export async function getAuthenticatedContext(): Promise<Browser> {
   const hasState = await authStateExists();
 
@@ -125,9 +151,17 @@ export async function getAuthenticatedContext(): Promise<Browser> {
 
     await page.goto(PORTAL_URL, { waitUntil: "load" });
 
+    // If portal kicked us to /login, try forum-SSO click before giving up.
+    // Forum cookies alone are enough for SSO if they're fresh.
+    if (page.url().includes("/login")) {
+      await completePortalSso(page);
+    }
+
     try {
       await waitForPortalLoaded(page, 10_000);
       console.log(chalk.green("Existing session is valid.\n"));
+      // Persist any new portal cookies the SSO step issued
+      await saveCookies(browser);
       return browser;
     } catch {
       console.log(chalk.yellow("Session expired, re-login required.\n"));
