@@ -142,5 +142,5 @@ export async function getAuthenticatedContext(): Promise<Browser> {
     return browser;
   }
 
-  throw new Error("Passkey login failed. Please run 'bun run register-passkey' to register a passkey.");
+  throw new Error("Login failed. Cookies are missing or expired and no passkey is registered. Run 'bun run login' to save fresh cookies (or 'bun run register-passkey' for the passkey flow).");
 }
