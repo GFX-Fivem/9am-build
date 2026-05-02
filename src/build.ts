@@ -133,7 +133,22 @@ export async function buildVersions(scriptDir: string, config: UploadConfig, out
       await copyScriptFiles(resolvedScriptDir, tempDir, config.exclude);
 
       const fxPath = path.join(tempDir, "fxmanifest.lua");
-      await appendEscrowIgnore(fxPath, ["**/*.*", "*"]);
+      // Cfx.re Keymaster does NOT honour wildcards in escrow_ignore reliably
+      // (validated by past customer reports — wildcards leave subdirectory
+      // files locked). Generate an explicit list of every script file in the
+      // open-source bundle instead. Use forward slashes — Keymaster requires
+      // them regardless of host OS.
+      const scriptFiles = await glob("**/*.{lua,js,jsx,ts,tsx,mjs,cjs}", {
+        cwd: tempDir,
+        nodir: true,
+        dot: false,
+      });
+      const explicitList = scriptFiles
+        .map((f) => f.split(path.sep).join("/"))
+        .filter((f) => f !== "fxmanifest.lua");
+      // Always include fxmanifest.lua first so the manifest itself stays open
+      const finalList = ["fxmanifest.lua", ...explicitList.sort()];
+      await appendEscrowIgnore(fxPath, finalList);
 
       const zipPath = path.join(outputDir, `${config.name}-open.zip`);
       await createZip(tempDir, zipPath);
