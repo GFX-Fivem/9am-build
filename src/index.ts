@@ -4,6 +4,7 @@ import { deployScript } from "./deploy.js";
 import { startServer, loadReposConfig } from "./server.js";
 import { registerPasskey } from "./register-passkey.js";
 import { loginAndSaveCookies } from "./login.js";
+import { listAssets } from "./list-assets.js";
 import { generateChangelog } from "./changelog.js";
 import { sendDiscordChangelog } from "./discord.js";
 
@@ -30,6 +31,32 @@ async function main() {
   // Cookies-only login (no passkey)
   if (command === "login") {
     await loginAndSaveCookies();
+    return;
+  }
+
+  // Scrape Cfx.re portal asset list (writes assets.json)
+  if (command === "list-assets") {
+    await listAssets();
+    return;
+  }
+
+  if (command === "portal-explore") {
+    const { exploreCreateFlow } = await import("./portal-explore.js");
+    await exploreCreateFlow();
+    return;
+  }
+
+  // Create a new asset on the portal: bun src/index.ts create-asset "<asset-name>" "<zip-path>"
+  if (command === "create-asset") {
+    const assetName = process.argv[3];
+    const zipPath = process.argv[4];
+    if (!assetName || !zipPath) {
+      console.error(chalk.red('Usage: bun src/index.ts create-asset "<asset-name>" "<absolute-zip-path>"'));
+      process.exit(1);
+    }
+    const { createAsset } = await import("./create-asset.js");
+    const result = await createAsset({ assetName, zipPath });
+    console.log("\nResult:", JSON.stringify(result, null, 2));
     return;
   }
 
